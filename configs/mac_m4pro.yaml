@@ -1,0 +1,125 @@
+data:
+  data_dir: "./data"
+  train: "train.parquet"
+  benchmark_items: "benchmark_items.parquet"
+  benchmark_queries: "benchmark_queries.parquet"
+
+artifacts:
+  root: "artifacts"
+
+compute:
+  device: "auto"
+  cpu_threads: "auto"
+  hnsw_threads: "auto"
+  dense_batch_size: 32
+  dense_max_length: 256
+  model_cache_dir: "artifacts/cache/huggingface"
+  local_dense_max_items: 8000
+  local_dense_top_k: 60
+  local_dense_batch_size: 16
+  retrieval_batch_size: 64
+  feature_workers: 6
+
+models:
+  embedding_model: "intfloat/multilingual-e5-base"
+  embedding_truncate_dim: null
+
+indexes:
+  bm25:
+    k1: 1.35
+    b: 0.62
+    top_k: 240
+  char_tfidf:
+    analyzer: "char_wb"
+    ngram_min: 3
+    ngram_max: 5
+    min_df: 2
+    max_features: 700000
+    top_k: 200
+  dense:
+    M: 48
+    ef_construction: 260
+    ef_search: 180
+    top_k: 240
+  history:
+    top_queries: 32
+    top_items_per_query: 80
+    top_k_items: 280
+    min_similarity: 0.43
+
+candidate_pool:
+  max_candidates: 800
+  rrf_k: 60
+  source_weights:
+    bm25: 1.00
+    char_tfidf: 0.85
+    dense: 1.25
+    local_dense: 1.05
+    history: 1.20
+  protection_profiles:
+    none: {}
+    light:
+      bm25: 2
+      char_tfidf: 2
+      dense: 3
+      local_dense: 3
+      history: 5
+      exact_anchor: 4
+    medium:
+      bm25: 3
+      char_tfidf: 3
+      dense: 5
+      local_dense: 5
+      history: 7
+      exact_anchor: 6
+    strong:
+      bm25: 5
+      char_tfidf: 4
+      dense: 7
+      local_dense: 7
+      history: 9
+      exact_anchor: 8
+  default_protection_profile: "medium"
+  final_k: 50
+
+features:
+  fuzzy: true
+  rating_weight: 1.0
+  missing_numeric_value: -1.0
+
+ranker:
+  enabled: true
+  objective: "lambdarank"
+  metric: "ndcg"
+  num_leaves: 63
+  min_child_samples: 40
+  learning_rate: 0.045
+  n_estimators: 650
+  max_depth: -1
+  subsample: 0.90
+  colsample_bytree: 0.90
+  reg_alpha: 0.25
+  reg_lambda: 2.0
+  random_state: 42
+  n_jobs: "auto"
+  subsample_freq: 1
+  early_stopping_rounds: 60
+  log_period: 25
+  lambdarank_truncation_level: 53
+
+training:
+  split_seed: 42
+  train_fraction: 0.80
+  split_strategy: "query_text"          
+  ranker_train_max_queries: 6000         
+  ranker_term_fit_fraction: 0.25         
+  validation_tune_max_queries: 1500      
+  validation_max_queries: 1500           
+  max_candidates_per_query: 192
+  max_candidates_per_query_train: 192
+  max_candidates_per_query_val: 192
+  negative_sampling_seed: 42
+
+runtime:
+  progress: true
+  heartbeat_seconds: 15
